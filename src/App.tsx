@@ -31,7 +31,7 @@ const bonusGroups: BonusGroup[] = [
   {
     id: "gen3",
     label: "Gen 3",
-    bonuses: [{ name: "Scrow bonus", startDate: new Date(2024, 9, 30) }],
+    bonuses: [{ name: "Scrow bonus", startDate: new Date(2025, 0, 1) }],
   },
 ];
 
