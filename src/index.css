@@ -1,1 +1,34 @@
 @import "tailwindcss";
+
+/* Shadow-Soft brand colors (stole from the website) */
+:root {
+  --ss-orange: #f5822b;
+  --ss-dark-gray: #444444;
+  --ss-light-gray: #eeeeee;
+}
+
+body {
+  font-family: "Raleway", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--ss-dark-gray);
+}
+
+button:focus,
+a:focus,
+input:focus,
+select:focus {
+  outline: 2px solid var(--ss-orange);
+  outline-offset: 2px;
+}
+
+@keyframes progress {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: var(--progress-percent);
+  }
+}
+
+.animate-progress {
+  animation: progress 1s ease-out forwards;
+}
