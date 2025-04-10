@@ -3,6 +3,7 @@ import Header from "./components/Header";
 import BonusCard from "./components/BonusCard";
 import BonusInfo from "./components/BonusInfo";
 import QuarterBonusTracker from "./components/QuarterBonusTracker";
+
 interface Employee {
   id: string;
   name: string;
