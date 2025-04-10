@@ -37,7 +37,7 @@ const employees: Employee[] = [
   },
   {
     id: "ss6",
-    name: "Ricardo Arturo",
+    name: "Ricardo Ramirez",
     startDate: new Date(2023, 9, 15),
     generation: "Gen 2",
   },
