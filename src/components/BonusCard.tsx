@@ -21,19 +21,24 @@ interface BonusDates {
 
 const getEscrowBonusDates = (startDate: Date): BonusDates => {
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   const firstBonus = new Date(startDate);
   firstBonus.setFullYear(firstBonus.getFullYear() + 1);
 
   const isToday = (date: Date) => {
-    return (
-      date.getDate() === today.getDate() &&
-      date.getMonth() === today.getMonth() &&
-      date.getFullYear() === today.getFullYear()
-    );
+    const dateToCheck = new Date(date);
+    dateToCheck.setHours(0, 0, 0, 0);
+    return dateToCheck.getTime() === today.getTime();
   };
 
-  if (today < firstBonus) {
+  const isFuture = (date: Date) => {
+    const dateToCheck = new Date(date);
+    dateToCheck.setHours(0, 0, 0, 0);
+    return dateToCheck.getTime() > today.getTime();
+  };
+
+  if (isFuture(firstBonus) || isToday(firstBonus)) {
     if (isToday(firstBonus)) {
       return {
         firstBonus,
@@ -79,113 +84,83 @@ const getEscrowBonusDates = (startDate: Date): BonusDates => {
     };
   }
 
-  const monthsSinceStart =
-    (today.getFullYear() - startDate.getFullYear()) * 12 +
-    (today.getMonth() - startDate.getMonth());
+  const allBonusDates = [];
 
-  const completePeriods = Math.floor((monthsSinceStart - 12) / 6) + 1;
+  allBonusDates.push(new Date(firstBonus));
 
-  const lastBonusDate = new Date(startDate);
-  lastBonusDate.setFullYear(startDate.getFullYear() + 1);
-  lastBonusDate.setMonth(lastBonusDate.getMonth() + (completePeriods - 1) * 6);
+  let currentDate = new Date(firstBonus);
+  while (true) {
+    currentDate = new Date(currentDate);
+    currentDate.setMonth(currentDate.getMonth() + 6);
 
-  const nextScheduledBonus = new Date(lastBonusDate);
-  nextScheduledBonus.setMonth(lastBonusDate.getMonth() + 6);
+    if (currentDate.getFullYear() > today.getFullYear() + 2) {
+      break;
+    }
 
-  if (isToday(nextScheduledBonus)) {
-    return {
-      firstBonus,
-      previousBonus: lastBonusDate,
-      nextBonus: nextScheduledBonus,
-      futureBonuses: [
-        new Date(
-          nextScheduledBonus.getFullYear(),
-          nextScheduledBonus.getMonth() + 6,
-          nextScheduledBonus.getDate(),
-        ),
-        new Date(
-          nextScheduledBonus.getFullYear(),
-          nextScheduledBonus.getMonth() + 12,
-          nextScheduledBonus.getDate(),
-        ),
-      ],
-      isTodayBonus: true,
-    };
+    allBonusDates.push(new Date(currentDate));
   }
 
-  if (lastBonusDate > today) {
-    lastBonusDate.setMonth(lastBonusDate.getMonth() - 6);
+  let previousBonus = null;
+  for (let i = allBonusDates.length - 1; i >= 0; i--) {
+    if (!isFuture(allBonusDates[i]) && !isToday(allBonusDates[i])) {
+      previousBonus = allBonusDates[i];
+      break;
+    }
   }
 
-  if (isToday(lastBonusDate)) {
-    return {
-      firstBonus,
-      previousBonus: new Date(
-        lastBonusDate.getFullYear(),
-        lastBonusDate.getMonth() - 6,
-        lastBonusDate.getDate(),
-      ),
-      nextBonus: new Date(
-        lastBonusDate.getFullYear(),
-        lastBonusDate.getMonth() + 6,
-        lastBonusDate.getDate(),
-      ),
-      futureBonuses: [
-        new Date(
-          lastBonusDate.getFullYear(),
-          lastBonusDate.getMonth() + 12,
-          lastBonusDate.getDate(),
-        ),
-        new Date(
-          lastBonusDate.getFullYear(),
-          lastBonusDate.getMonth() + 18,
-          lastBonusDate.getDate(),
-        ),
-      ],
-      isTodayBonus: true,
-    };
+  let nextBonus = null;
+  let isTodayBonus = false;
+
+  for (let i = 0; i < allBonusDates.length; i++) {
+    if (isToday(allBonusDates[i])) {
+      nextBonus = allBonusDates[i];
+      isTodayBonus = true;
+      break;
+    } else if (isFuture(allBonusDates[i])) {
+      nextBonus = allBonusDates[i];
+      break;
+    }
   }
+
+  if (!nextBonus) {
+    nextBonus = new Date(previousBonus || firstBonus);
+    nextBonus.setMonth(nextBonus.getMonth() + 6);
+  }
+
+  const futureBonus1 = new Date(nextBonus);
+  futureBonus1.setMonth(nextBonus.getMonth() + 6);
+
+  const futureBonus2 = new Date(nextBonus);
+  futureBonus2.setMonth(nextBonus.getMonth() + 12);
 
   return {
     firstBonus,
-    previousBonus: lastBonusDate,
-    nextBonus: nextScheduledBonus,
-    futureBonuses: [
-      new Date(
-        nextScheduledBonus.getFullYear(),
-        nextScheduledBonus.getMonth() + 6,
-        nextScheduledBonus.getDate(),
-      ),
-      new Date(
-        nextScheduledBonus.getFullYear(),
-        nextScheduledBonus.getMonth() + 12,
-        nextScheduledBonus.getDate(),
-      ),
-    ],
-    isTodayBonus: false,
+    previousBonus,
+    nextBonus,
+    futureBonuses: [futureBonus1, futureBonus2],
+    isTodayBonus,
   };
 };
 
 const getDaysUntil = (targetDate: Date): number => {
   const today = new Date();
-  const diffTime =
-    new Date(
-      targetDate.getFullYear(),
-      targetDate.getMonth(),
-      targetDate.getDate(),
-    ).getTime() -
-    new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  today.setHours(0, 0, 0, 0);
+
+  const target = new Date(targetDate);
+  target.setHours(0, 0, 0, 0);
+
+  const diffTime = target.getTime() - today.getTime();
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
 
-const Confetti = () => {
+const BackgroundConfetti = () => {
   return (
     <div className="confetti-container">
-      {Array.from({ length: 100 }).map((_, i) => {
-        const size = Math.random() * 10 + 5;
+      {Array.from({ length: 50 }).map((_, i) => {
+        const size = Math.random() * 8 + 4;
         const left = Math.random() * 100;
         const animationDuration = Math.random() * 3 + 2;
-        const delay = Math.random() * 5;
+        const delay = Math.random() * 3;
 
         const colors = ["#F5822B", "#FFC107", "#4CAF50", "#2196F3", "#9C27B0"];
         const color = colors[Math.floor(Math.random() * colors.length)];
@@ -203,7 +178,7 @@ const Confetti = () => {
               top: "-10px",
               opacity: 0,
               animation: `fall ${animationDuration}s ease-in ${delay}s forwards`,
-              zIndex: 1000,
+              zIndex: 1,
             }}
           />
         );
@@ -212,7 +187,7 @@ const Confetti = () => {
         @keyframes fall {
           0% {
             transform: translateY(0) rotate(0deg);
-            opacity: 1;
+            opacity: 0.8;
           }
           100% {
             transform: translateY(600px) rotate(360deg);
@@ -249,10 +224,6 @@ const BonusCard: React.FC<BonusCardProps> = ({ employee }) => {
         setDaysLeft(0);
       }
 
-      console.log("Calculated bonus dates:", dates);
-      console.log("Is today a bonus day?", dates.isTodayBonus);
-
-      // Calculate estimated amount ($2 per hour, ~40 hours per week, 48 weeks (PTO, holidays, etc..) divided by 2)
       setEstimatedAmount((2 * 40 * 48) / 2);
     }
   }, [employee]);
@@ -276,7 +247,7 @@ const BonusCard: React.FC<BonusCardProps> = ({ employee }) => {
 
   return (
     <div className="relative">
-      {bonusDates.isTodayBonus && <Confetti />}
+      {bonusDates.isTodayBonus && <BackgroundConfetti />}
 
       <h2 className="text-2xl font-bold mb-4">Escrow Bonus Tracker</h2>
       <p className="mb-4 text-gray-600">
@@ -306,10 +277,10 @@ const BonusCard: React.FC<BonusCardProps> = ({ employee }) => {
       <div className="bg-white border border-orange-200 rounded-lg p-6 mb-6">
         {bonusDates.isTodayBonus ? (
           <div className="text-center py-8">
-            <h3 className="text-2xl font-bold mb-4 text-ss-orange">
+            <h3 className="text-2xl font-bold mb-4 text-ss-orange animate-pulse">
               🎉 Bonus Day! 🎉
             </h3>
-            <div className="p-6 bg-green-50 border-2 border-green-300 rounded-lg text-center mb-6 animate-pulse">
+            <div className="p-6 bg-green-50 border-2 border-green-300 rounded-lg text-center mb-6">
               <span className="text-green-600 font-bold text-xl">
                 Congratulations! Your escrow bonus is being processed today!
               </span>
